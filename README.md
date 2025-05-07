@@ -22,8 +22,9 @@ pip install -r requirements.txt
 
 ```
 # Add the following configurations
-
-LANGCHAIN_API_KEY = ""
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY = "Your_Langsmith_API_Key"
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
 LANGCHAIN_PROJECT = "Your_Project_Name"
 
 Note: You can generate the API key from the documentation.
