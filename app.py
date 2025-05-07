@@ -5,13 +5,18 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 
+# Load the environment variables
 load_dotenv()
 
-# Langsmith Tracking
-os.environ["LANGCHAIN_TRACKING_V2"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
-## Defining Prompt Template
+# Langsmith Tracing Setup
+os.environ['LANGSMITH_TRACING'] = "true"
+os.environ['LANGSMITH_API_KEY'] = os.getenv("LANGSMITH_API_KEY")
+os.environ['LANGSMITH_ENDPOINT'] = os.getenv("LANGSMITH_ENDPOINT")
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT")
+
+
+# Defining Prompt Template
 prompt=ChatPromptTemplate.from_messages(
     [
         ("system", "You are a helpful assistant. Please respond to the user queries",),
@@ -19,14 +24,13 @@ prompt=ChatPromptTemplate.from_messages(
     ]
 )
 
-## Streamlit framework
+# Streamlit framework
 st.title('Langchain Demo Chatbot')
 input_text = st.text_input("Search for any topics you want...") 
 
 
 #LLM
 llm = OllamaLLM(model="qwen2.5-coder:3b")
-
 # String output parser 
 output_parser = StrOutputParser()
 
