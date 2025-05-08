@@ -52,5 +52,9 @@ ollama run <model_name>
 6) Running the Chatbot
 
 ```
-i) Streamlit run app.py
+i) Go to the app.py file location then Enter the following command:
+
+    Streamlit run app.py
 ```
+
+
