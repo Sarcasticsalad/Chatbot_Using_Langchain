@@ -1,3 +1,4 @@
+# == Imports ==
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_ollama.chat_models import ChatOllama
@@ -9,7 +10,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 
-# Load the environment variables
+# === Load environment variables ===
 load_dotenv()
 
 # Langsmith Tracing Setup
@@ -18,46 +19,60 @@ os.environ['LANGSMITH_API_KEY'] = os.getenv("LANGSMITH_API_KEY")
 os.environ['LANGSMITH_ENDPOINT'] = os.getenv("LANGSMITH_ENDPOINT")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT")
 
-# Streamlit framework
+# === Streamlit Framework Setup ===
 st.title('Langchain Demo Chatbot')
 input_text = st.text_input("Search for any topics you want...") 
 
 
-# Defining Prompt Template with message placeholders
+# === Defining Prompt Template with message placeholders ===
+
 prompt = ChatPromptTemplate([
+        # System message that instructs the assistant on behavior
         SystemMessagePromptTemplate.from_template(
             "You are a helpful assistant. Please respond to the user queries"
         ),
 
-        # The variable_name here must align with memory
+        # Chat history placeholder (required for memory)
         MessagesPlaceholder(variable_name="chat_history"),
+        # User input (question)
         HumanMessagePromptTemplate.from_template("{question}")
         
     ]
 )
 
-#LLM
+# === Load the Chat Model ===
+# ChatOllama can be replaced with OpenAI, Anthropic, etc.
+# Note: Different models may require different memory or input formatting
 llm = ChatOllama(model="qwen2.5-coder:latest")
 
-# String output parser 
+# === String Output Parser === 
+# Converts the structured output into a plain string for display
 output_parser = StrOutputParser()
 
-# Initialize memory
+# === Memory Initialization Function ===
+# Uses session_id to keep track of individual conversations
 def get_memory(session_id: str):
+    """
+    Returns the conversation memory for the given session_id.
+    Initializes a new ConversationBufferMemory if not already present.
+    """
     if "memory" not in st.session_state:
         st.session_state.memory = {}
 
     if session_id not in st.session_state.memory:
         st.session_state.memory[session_id] = ConversationBufferMemory(
-            memory_key="chat_history", return_messages=True
+            # Must match the placeholder
+            memory_key="chat_history", 
+            # Required for proper memory replay
+            return_messages=True
         )    
     
+    # Only returning the chat_memory for use with RunnableWithMessageHistory
     return st.session_state.memory[session_id].chat_memory
 
-# memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-
-# Creating the chain
+# === Chain Setup with Memory Support ===
+# RunnableWithMessageHistory is used to support persistent conversation state
 chain = prompt | llm | output_parser
 chat_chain = RunnableWithMessageHistory(
         runnable=chain,
@@ -67,35 +82,24 @@ chat_chain = RunnableWithMessageHistory(
         
 )
 
+# === Handling User Input ===
 if input_text:
-    # # st.write(chain.invoke({'question':input_text}))
-    # response = chain.invoke({'question': input_text})
-    # st.write(response['text'])
-    # st.write(prompt)
-
-    # 1. Load chat history from memory
-    # chat_history = memory.load_memory_variables({})["chat_history"]
 
     session_id = 'user-session'
 
-    # 2. Run the chain with question + chat history
     response = chat_chain.invoke(
         {"question": input_text}, 
         config={"configurable":{"session_id":session_id}}
         )
 
-    # 3. Show the response in the UI
-    # response_str = str(response)
-    # st.write(response_str)  
-
     st.write(response)
 
-    # # 4. Save interaction into memory
-    # memory.save_context({"question": input_text }, {"output": response_str})
-
+# === Display Conversation History ===
+# This shows the previous chat messages from the session
 with st.expander("Conversation History"):
     memory = get_memory("user-session")
 
     for msg in memory.messages:
+        # e.g., AIMessage -> AI
         role = type(msg).__name__.replace("Message", "")
         st.write(f"{role}:{msg.content}")    
