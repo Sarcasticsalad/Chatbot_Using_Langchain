@@ -52,9 +52,20 @@ ollama run <model_name>
 6) Running the Chatbot
 
 ```
-i) Go to the app.py file location then Enter the following command:
+i) Open a terminal and go to the API folder. Then in the terminal run the following command:
 
-    Streamlit run app.py
+    python server.py
+
+Note: This runs the Langserve + FastAPI configurations. The default endpoint for the Chatbot is http://127.0.0.1:8000/chat/invoke .
 ```
 
+```
+ii) Open another terminal and go to the API folder. Then run the following command:
+
+    streamlit run client.py
+```
+
+```
+iii) Now you can interact with your llm model through an API interface.
+```
 
