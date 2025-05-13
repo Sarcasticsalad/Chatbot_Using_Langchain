@@ -32,7 +32,6 @@ Note: You can generate the API key from the documentation.
 ```
 
 5) Setting up Ollama
-
 ```
 i) Download Ollama and install it on your system.
 ```
@@ -70,3 +69,8 @@ ii) Open another terminal and go to the API folder. Then run the following comma
 iii) Now you can interact with your llm model through an API interface.
 ```
 
+##### Demo
+
+![Chatbot](images/Chatbot.png)
+
+![Chatbot Demo](images/Chatbot_demo.png)
