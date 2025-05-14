@@ -12,25 +12,27 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 
-# === Load environment variables ===
+# === Load environment variables from .env ===
 load_dotenv()
 
-# Langsmith Tracing Setup
+# Langsmith Tracing Setup if using LangSmith tracing/debugging
 os.environ['LANGSMITH_TRACING'] = "false"
 os.environ['LANGSMITH_API_KEY'] = os.getenv("LANGSMITH_API_KEY")
 os.environ['LANGSMITH_ENDPOINT'] = os.getenv("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com")
 os.environ["LANGSMITH_PROJECT"] = os.getenv("LANGSMITH_PROJECT")
 
 # === Defining Prompt Template with message placeholders ===
+# Sets the structure of messages sent to the model 
 prompt = ChatPromptTemplate([
-        # System message that instructs the assistant on behavior
+        # Role: Sets assistant behavior
         SystemMessagePromptTemplate.from_template(
             "You are a helpful assistant. Please respond to the user queries"
         ),
 
-        # Chat history placeholder (required for memory)
+        # Role: Adds conversation history (for memory)
         MessagesPlaceholder(variable_name="chat_history"),
-        # User input (question)
+        
+        # Role: Adds the latest user question
         HumanMessagePromptTemplate.from_template("{question}")
         
     ]
@@ -45,35 +47,56 @@ llm = ChatOllama(model="qwen2.5-coder:latest")
 # Converts the structured output into a plain string for display
 output_parser = StrOutputParser()
 
-# === Memory Initialization Function ===
+# === Memory Handler ===
 # Uses session_id to keep track of individual conversations
 def get_memory(session_id: str):
     """
-    Returns the conversation memory for the given session_id.
-    Initializes a new ConversationBufferMemory if not already present.
+    Retrieves or initializes memory for a specific session_id.
+
+    Args:
+        session_id (str): Unique identifier for the conversation session.
+
+    Returns:
+        chat_memory (list): List of chat messages from the conversation.
     """
+
+    # Initialize memory store if not yet created
     if "memory" not in st.session_state:
         st.session_state.memory = {}
 
+    # If memory doesn't exist for this session, create it
     if session_id not in st.session_state.memory:
         st.session_state.memory[session_id] = ConversationBufferMemory(
-            # Must match the placeholder
+            # Must match MessagesPlaceholder in the prompt
             memory_key="chat_history", 
-            # Required for proper memory replay
+            # Ensures chat messages are returned in proper format
             return_messages=True
         )    
     
-    # Only returning the chat_memory for use with RunnableWithMessageHistory
+    # Return only the chat memory (not the memory object) for use in RunnableWithMessageHistory
     return st.session_state.memory[session_id].chat_memory
 
 
-# === Chain Setup with Memory Support ===
-# RunnableWithMessageHistory is used to support persistent conversation state
+# === LangChain Chain with Memory Support ===
+# This chain handles prompting, generation, output parsing, and memory
+
+# 1. Format input using the prompt
+# 2. Generate response using the model
+# 3. Parse output to string
+# 4. Wrap final output in a dictionary
+
 chain = prompt | llm | output_parser | RunnableLambda(lambda x: {"output": x})
+
+# === Final Runnable with Memory Support ===
+
 chat_chain = RunnableWithMessageHistory(
+        # The full chain from prompt to parsed output
         runnable=chain,
+        # Memory retriever
         get_session_history=get_memory,
+        # Key from input dict to use as current user input
         input_messages_key="question",
+        # Key used in prompt for history injection
         history_messages_key="chat_history",
         
 )
